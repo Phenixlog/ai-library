@@ -1,22 +1,21 @@
+import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import handler from 'serve-handler';
-import http from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-const server = http.createServer((request, response) => {
-    return handler(request, response, {
-        public: join(__dirname, 'dist'),
-        rewrites: [
-            { source: '**', destination: '/index.html' }
-        ]
-    });
+// Serve static files from dist
+app.use(express.static(join(__dirname, 'dist')));
+
+// SPA fallback - serve index.html for all routes
+app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 PromptOzer running at http://0.0.0.0:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 PromptOzer running on port ${PORT}`);
 });
