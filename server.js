@@ -68,6 +68,38 @@ app.get('/api/auth/user/:id', async (req, res) => {
 
 // ============ PROMPTS API ============
 
+// Migrate prompts from localStorage to database (one-time migration)
+app.post('/api/prompts/migrate', async (req, res) => {
+    try {
+        const { prompts, userId } = req.body;
+        if (!prompts || !Array.isArray(prompts) || !userId) {
+            return res.status(400).json({ error: 'Prompts array and userId are required' });
+        }
+
+        const migratedPrompts = [];
+        for (const prompt of prompts) {
+            // Check if prompt already exists (by title + content to avoid duplicates)
+            const existing = await pool.query(
+                'SELECT id FROM prompts WHERE owner_id = $1 AND title = $2 AND content = $3',
+                [userId, prompt.title, prompt.content]
+            );
+
+            if (existing.rows.length === 0) {
+                const result = await pool.query(
+                    'INSERT INTO prompts (title, content, tags, category, owner_id, created_at) VALUES ($1, $2, $3, $4, $5, to_timestamp($6/1000.0)) RETURNING *',
+                    [prompt.title, prompt.content, prompt.tags || [], prompt.category || '', userId, prompt.createdAt || Date.now()]
+                );
+                migratedPrompts.push(result.rows[0]);
+            }
+        }
+
+        res.json({ migrated: migratedPrompts.length, message: `${migratedPrompts.length} prompts migrés avec succès!` });
+    } catch (error) {
+        console.error('Migration error:', error);
+        res.status(500).json({ error: 'Migration failed' });
+    }
+});
+
 // Get all prompts for a user
 app.get('/api/prompts/:userId', async (req, res) => {
     try {

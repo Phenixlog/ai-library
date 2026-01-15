@@ -10,7 +10,7 @@ import { getCurrentUser, logout, type User } from './lib/auth';
 
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(getCurrentUser());
-    const { prompts, handleAdd, handleUpdate, handleDelete } = usePrompts(user?.id);
+    const { prompts, refresh, handleAdd, handleUpdate, handleDelete } = usePrompts(user?.id);
     const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +67,8 @@ const App: React.FC = () => {
                                 }}
                                 onSearch={setSearchQuery}
                                 onDelete={handleDelete}
+                                userId={user?.id}
+                                onRefresh={refresh}
                             />
                         )}
                         {currentView === 'exploration' && (

@@ -1,15 +1,18 @@
 import React from 'react';
 import { Search, Trash2, Clock, Sparkles, Filter, ChevronRight } from 'lucide-react';
 import type { Prompt } from '../lib/storage';
+import { MigrationBanner } from './MigrationBanner';
 
 interface DashboardProps {
     prompts: Prompt[];
     onSelect: (p: Prompt) => void;
     onSearch: (query: string) => void;
     onDelete: (id: string) => void;
+    userId?: string;
+    onRefresh?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearch, onDelete }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearch, onDelete, userId, onRefresh }) => {
     return (
         <div className="flex-1 flex flex-col h-full bg-[#020617] relative">
             {/* Dynamic Background Glow */}
@@ -50,6 +53,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearc
             </header>
 
             <main className="flex-1 p-10 pt-4 overflow-y-auto z-10">
+                {/* Migration Banner for users with localStorage data */}
+                {userId && onRefresh && (
+                    <MigrationBanner userId={userId} onMigrationComplete={onRefresh} />
+                )}
+
                 {prompts.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center py-20">
                         <div className="relative mb-8">

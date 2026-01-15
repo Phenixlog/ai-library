@@ -46,5 +46,5 @@ export const usePrompts = (userId: string | undefined) => {
         }
     };
 
-    return { prompts, loading, handleAdd, handleUpdate, handleDelete };
+    return { prompts, loading, refresh, handleAdd, handleUpdate, handleDelete };
 };
