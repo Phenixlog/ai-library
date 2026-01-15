@@ -3,13 +3,14 @@ import { Upload, Check, AlertCircle } from 'lucide-react';
 
 interface MigrationBannerProps {
     userId: string;
+    userEmail: string;
     onMigrationComplete: () => void;
 }
 
 const STORAGE_KEY = 'promptozer_prompts';
 const MIGRATION_DONE_KEY = 'promptozer_migration_done';
 
-export const MigrationBanner: React.FC<MigrationBannerProps> = ({ userId, onMigrationComplete }) => {
+export const MigrationBanner: React.FC<MigrationBannerProps> = ({ userId, userEmail, onMigrationComplete }) => {
     const [show, setShow] = useState(false);
     const [migrating, setMigrating] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -51,7 +52,7 @@ export const MigrationBanner: React.FC<MigrationBannerProps> = ({ userId, onMigr
             const response = await fetch('/api/prompts/migrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompts: allPrompts, userId })
+                body: JSON.stringify({ prompts: allPrompts, userId, userEmail })
             });
 
             const result = await response.json();

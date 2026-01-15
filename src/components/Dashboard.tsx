@@ -9,10 +9,11 @@ interface DashboardProps {
     onSearch: (query: string) => void;
     onDelete: (id: string) => void;
     userId?: string;
+    userEmail?: string;
     onRefresh?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearch, onDelete, userId, onRefresh }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearch, onDelete, userId, userEmail, onRefresh }) => {
     return (
         <div className="flex-1 flex flex-col h-full bg-[#020617] relative">
             {/* Dynamic Background Glow */}
@@ -54,8 +55,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ prompts, onSelect, onSearc
 
             <main className="flex-1 p-10 pt-4 overflow-y-auto z-10">
                 {/* Migration Banner for users with localStorage data */}
-                {userId && onRefresh && (
-                    <MigrationBanner userId={userId} onMigrationComplete={onRefresh} />
+                {userId && userEmail && onRefresh && (
+                    <MigrationBanner userId={userId} userEmail={userEmail} onMigrationComplete={onRefresh} />
                 )}
 
                 {prompts.length === 0 ? (

@@ -68,6 +68,7 @@ const App: React.FC = () => {
                                 onSearch={setSearchQuery}
                                 onDelete={handleDelete}
                                 userId={user?.id}
+                                userEmail={user?.email}
                                 onRefresh={refresh}
                             />
                         )}

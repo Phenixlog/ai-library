@@ -71,9 +71,37 @@ app.get('/api/auth/user/:id', async (req, res) => {
 // Migrate prompts from localStorage to database (one-time migration)
 app.post('/api/prompts/migrate', async (req, res) => {
     try {
-        const { prompts, userId } = req.body;
-        if (!prompts || !Array.isArray(prompts) || !userId) {
-            return res.status(400).json({ error: 'Prompts array and userId are required' });
+        const { prompts, userId, userEmail } = req.body;
+        if (!prompts || !Array.isArray(prompts)) {
+            return res.status(400).json({ error: 'Prompts array is required' });
+        }
+
+        // First, verify the user exists in the database
+        // If userId doesn't exist, we need to find or create user by email
+        let actualUserId = userId;
+
+        // Check if the provided userId exists
+        const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+
+        if (userCheck.rows.length === 0) {
+            // User doesn't exist with this ID - try to find by email or create new
+            if (userEmail) {
+                const userByEmail = await pool.query('SELECT id FROM users WHERE email = $1', [userEmail]);
+                if (userByEmail.rows.length > 0) {
+                    actualUserId = userByEmail.rows[0].id;
+                } else {
+                    // Create the user
+                    const name = userEmail.split('@')[0];
+                    const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userEmail}`;
+                    const newUser = await pool.query(
+                        'INSERT INTO users (email, name, avatar) VALUES ($1, $2, $3) RETURNING id',
+                        [userEmail, name, avatar]
+                    );
+                    actualUserId = newUser.rows[0].id;
+                }
+            } else {
+                return res.status(400).json({ error: 'User not found. Please log out and log back in.' });
+            }
         }
 
         const migratedPrompts = [];
@@ -81,13 +109,13 @@ app.post('/api/prompts/migrate', async (req, res) => {
             // Check if prompt already exists (by title + content to avoid duplicates)
             const existing = await pool.query(
                 'SELECT id FROM prompts WHERE owner_id = $1 AND title = $2 AND content = $3',
-                [userId, prompt.title, prompt.content]
+                [actualUserId, prompt.title, prompt.content]
             );
 
             if (existing.rows.length === 0) {
                 const result = await pool.query(
                     'INSERT INTO prompts (title, content, tags, category, owner_id, created_at) VALUES ($1, $2, $3, $4, $5, to_timestamp($6/1000.0)) RETURNING *',
-                    [prompt.title, prompt.content, prompt.tags || [], prompt.category || '', userId, prompt.createdAt || Date.now()]
+                    [prompt.title, prompt.content, prompt.tags || [], prompt.category || '', actualUserId, prompt.createdAt || Date.now()]
                 );
                 migratedPrompts.push(result.rows[0]);
             }
