@@ -23,14 +23,14 @@ export const MigrationBanner: React.FC<MigrationBannerProps> = ({ userId, onMigr
             return;
         }
 
-        // Check if there are local prompts to migrate
+        // Check if there are local prompts to migrate (check ALL prompts, not just for current user)
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) {
             try {
                 const allPrompts = JSON.parse(data);
-                const userPrompts = allPrompts.filter((p: any) => p.ownerId === userId);
-                if (userPrompts.length > 0) {
-                    setLocalPromptsCount(userPrompts.length);
+                // Show migration for ANY prompts in localStorage (userId may have changed after PostgreSQL migration)
+                if (allPrompts.length > 0) {
+                    setLocalPromptsCount(allPrompts.length);
                     setShow(true);
                 }
             } catch {
@@ -45,13 +45,13 @@ export const MigrationBanner: React.FC<MigrationBannerProps> = ({ userId, onMigr
             const data = localStorage.getItem(STORAGE_KEY);
             if (!data) throw new Error('No local data');
 
+            // Migrate ALL prompts from localStorage, reassigning them to the current logged-in user
             const allPrompts = JSON.parse(data);
-            const userPrompts = allPrompts.filter((p: any) => p.ownerId === userId);
 
             const response = await fetch('/api/prompts/migrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompts: userPrompts, userId })
+                body: JSON.stringify({ prompts: allPrompts, userId })
             });
 
             const result = await response.json();
