@@ -11,17 +11,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email) return;
 
         setLoading(true);
-        // Simulate local network delay
-        setTimeout(() => {
-            const user = login(email);
+        try {
+            const user = await login(email);
             onLogin(user);
+        } catch (error) {
+            console.error('Login failed:', error);
+        } finally {
             setLoading(false);
-        }, 800);
+        }
     };
 
     return (

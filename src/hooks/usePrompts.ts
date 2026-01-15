@@ -1,39 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Prompt } from '../lib/storage';
 import { getPrompts, addPrompt, updatePrompt, deletePrompt } from '../lib/storage';
 
 export const usePrompts = (userId: string | undefined) => {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const refresh = () => {
+    const refresh = useCallback(async () => {
         if (userId) {
-            setPrompts(getPrompts(userId));
+            setLoading(true);
+            const data = await getPrompts(userId);
+            setPrompts(data);
+            setLoading(false);
         } else {
             setPrompts([]);
+            setLoading(false);
         }
-    };
+    }, [userId]);
 
     useEffect(() => {
         refresh();
-    }, [userId]);
+    }, [refresh]);
 
-    const handleAdd = (data: Omit<Prompt, 'id' | 'createdAt' | 'ownerId'>) => {
+    const handleAdd = async (data: Omit<Prompt, 'id' | 'createdAt' | 'ownerId'>) => {
         if (!userId) return;
-        const newPrompt = addPrompt(data, userId);
-        setPrompts(prev => [newPrompt, ...prev]);
+        const newPrompt = await addPrompt(data, userId);
+        if (newPrompt) {
+            setPrompts(prev => [newPrompt, ...prev]);
+        }
         return newPrompt;
     };
 
-    const handleUpdate = (id: string, updates: Partial<Prompt>) => {
+    const handleUpdate = async (id: string, updates: Partial<Prompt>) => {
         if (!userId) return;
-        updatePrompt(id, updates);
-        setPrompts(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)));
+        const updated = await updatePrompt(id, updates);
+        if (updated) {
+            setPrompts(prev => prev.map(p => (p.id === id ? updated : p)));
+        }
     };
 
-    const handleDelete = (id: string) => {
-        deletePrompt(id);
-        setPrompts(prev => prev.filter(p => p.id !== id));
+    const handleDelete = async (id: string) => {
+        const success = await deletePrompt(id);
+        if (success) {
+            setPrompts(prev => prev.filter(p => p.id !== id));
+        }
     };
 
-    return { prompts, handleAdd, handleUpdate, handleDelete };
+    return { prompts, loading, handleAdd, handleUpdate, handleDelete };
 };

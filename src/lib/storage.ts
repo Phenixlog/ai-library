@@ -8,51 +8,57 @@ export interface Prompt {
     createdAt: number;
 }
 
-export const STORAGE_KEY = 'promptozer_prompts';
+const API_BASE = '/api';
 
-export const getPrompts = (userId: string): Prompt[] => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const allPrompts: Prompt[] = data ? JSON.parse(data) : [];
-    return allPrompts.filter(p => p.ownerId === userId);
-};
-
-export const savePrompts = (prompts: Prompt[], userId: string): void => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    let allPrompts: Prompt[] = data ? JSON.parse(data) : [];
-
-    // Remove old prompts for this user and add new ones
-    allPrompts = allPrompts.filter(p => p.ownerId !== userId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...allPrompts, ...prompts]));
-};
-
-export const addPrompt = (prompt: Omit<Prompt, 'id' | 'createdAt' | 'ownerId'>, userId: string): Prompt => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    const allPrompts: Prompt[] = data ? JSON.parse(data) : [];
-
-    const newPrompt: Prompt = {
-        ...prompt,
-        id: crypto.randomUUID(),
-        ownerId: userId,
-        createdAt: Date.now(),
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([newPrompt, ...allPrompts]));
-    return newPrompt;
-};
-
-export const updatePrompt = (id: string, updates: Partial<Prompt>): void => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    let allPrompts: Prompt[] = data ? JSON.parse(data) : [];
-
-    const index = allPrompts.findIndex(p => p.id === id);
-    if (index !== -1) {
-        allPrompts[index] = { ...allPrompts[index], ...updates } as Prompt;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allPrompts));
+export const getPrompts = async (userId: string): Promise<Prompt[]> => {
+    try {
+        const response = await fetch(`${API_BASE}/prompts/${userId}`);
+        if (!response.ok) throw new Error('Failed to fetch prompts');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching prompts:', error);
+        return [];
     }
 };
 
-export const deletePrompt = (id: string): void => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    let allPrompts: Prompt[] = data ? JSON.parse(data) : [];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allPrompts.filter(p => p.id !== id)));
+export const addPrompt = async (prompt: Omit<Prompt, 'id' | 'createdAt' | 'ownerId'>, userId: string): Promise<Prompt | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/prompts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...prompt, ownerId: userId })
+        });
+        if (!response.ok) throw new Error('Failed to add prompt');
+        return await response.json();
+    } catch (error) {
+        console.error('Error adding prompt:', error);
+        return null;
+    }
+};
+
+export const updatePrompt = async (id: string, updates: Partial<Prompt>): Promise<Prompt | null> => {
+    try {
+        const response = await fetch(`${API_BASE}/prompts/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        if (!response.ok) throw new Error('Failed to update prompt');
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating prompt:', error);
+        return null;
+    }
+};
+
+export const deletePrompt = async (id: string): Promise<boolean> => {
+    try {
+        const response = await fetch(`${API_BASE}/prompts/${id}`, {
+            method: 'DELETE'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting prompt:', error);
+        return false;
+    }
 };
